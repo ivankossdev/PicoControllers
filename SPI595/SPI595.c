@@ -7,32 +7,15 @@
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
 #define SPI_PORT spi0
 #define PIN_MISO 16
-#define PIN_CS   17
+#define PIN_CS   17 // 12 | ST_CP | Storage Registet input
 #define PIN_SCK  18 // 11 | SH_CP | Clock
 #define PIN_MOSI 19 // 14 | DS    | Data pin
-#define PIN_SS   20 // 12 | ST_CP | Storage Registet input
 
-// Функция для отправки данных через SPI
-void spi_write_byte(uint8_t data) {
-    gpio_put(PIN_CS, 0); // Захват данных
-    spi_write_blocking(SPI_PORT, &data, 1); // Отправка байта
-    gpio_put(PIN_CS, 1); // Освобождение данных
-    // Пауза для синхронизации (если необходимо)
-    sleep_us(1);
+void spi_send_byte(spi_inst_t *spi, uint8_t data) {
+    gpio_put(PIN_CS, 0); // Начать передачу
+    spi_write_blocking(spi, &data, 1); // Отправить байт
+    gpio_put(PIN_CS, 1); // Завершить передачу
 }
-
-// Функция для установки значения на 595
-void set_595(uint8_t value) {
-    // Передача данных в регистр 595 через SPI
-    spi_write_byte(value);
-    // Управление выводом данных (строб)
-    gpio_put(PIN_SS, 0);
-    sleep_us(1);
-    gpio_put(PIN_SS, 1);
-    sleep_us(1);
-
-}
-
 
 int main()
 {
@@ -49,11 +32,12 @@ int main()
     gpio_set_dir(PIN_CS, GPIO_OUT);
     gpio_put(PIN_CS, 1);
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
+    
 
     while (true) {
-        set_595(0x0f);
-        sleep_ms(1000);
-        set_595(0xf0);
-        sleep_ms(1000);
+        spi_send_byte(SPI_PORT, 0x0f);
+        sleep_ms(500);
+        spi_send_byte(SPI_PORT, 0xf0);
+        sleep_ms(500);
     }
 }
